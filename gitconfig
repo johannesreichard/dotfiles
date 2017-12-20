@@ -1,0 +1,12 @@
+[user]
+    email = mail@johannesreichard.de
+    name = Johannes Reichard
+[color]
+    ui = auto
+[push]
+    default = simple
+[core]
+    editor = vim
+    excludesfile = ~/.gitignore
+[web]
+    browser = google-chrome

@@ -1,0 +1,8 @@
+# zsh config that should never be commited
+zsh/local.zsh
+
+*.un~
+
+__pycache__/
+*.py[cod]
+*$py.class

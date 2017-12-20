@@ -1,0 +1,5 @@
+#!/usr/bin/zsh
+
+urxvtcd --title htop -e zsh -c 'htop' &!
+urxvtcd --title coretemp -e zsh -c 'watch -n 1 sensors' &!
+urxvtcd --title gputemp -e zsh -c 'watch -n 1 nvidia-smi' &!

@@ -1,0 +1,29 @@
+#!/bin/bash
+# check status of bluetooth headphones, activate if able to connect, deactivate if activated
+
+HEADSET_ID="04:52:C7:63:40:F1"
+HEADSET_SINK="bluez_sink.${HEADSET_ID//:/_}.a2dp_sink"
+SOUNDCARD_SINK="alsa_output.pci-0000_00_1f.3.analog-stereo"
+
+function bt-control {
+    echo "$1" | bluetoothctl 2>/dev/null
+}
+
+function set_default_sink {
+    eval "pactl set-default-sink $1"
+}
+
+
+DEVICES=`bt-control "devices"`
+
+if [[ $DEVICES == *$HEADSET_ID* ]]; then
+    bt-control $HEADSET_ID
+    set_default_sink $HEADSET_SINK
+    echo 'set to bluetooth headset'
+else
+    set_default_sink $SOUNDCARD_SINK
+    echo 'set to soundcard'
+fi
+
+
+
