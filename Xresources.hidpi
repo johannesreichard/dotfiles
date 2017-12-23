@@ -1,0 +1,16 @@
+! -----------------------------------------------------------------------------
+! HI-DPI settings
+! -----------------------------------------------------------------------------
+
+Xft.dpi: 192
+Xft.antialias:  true
+Xft.hinting:    true
+Xft.rgba:       rgb
+Xft.hintstyle:  hintslight
+
+! URxvt.font: xft:Terminus pixelsize=14:antialias=true
+URxvt.font: xft:Terminus:pixelsize=32:antialias=false
+
+! rofi
+rofi.dpi: 192
+
