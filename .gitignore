@@ -1,8 +1,13 @@
 # zsh config that should never be commited
 zsh/local.zsh
 
+# undo / swap files
 *.un~
+*.swa
+*.swo
+*.swp
 
+# python
 __pycache__/
 *.py[cod]
 *$py.class
