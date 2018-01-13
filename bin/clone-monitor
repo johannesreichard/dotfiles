@@ -1,0 +1,155 @@
+#!/usr/bin/env python3
+
+import argparse
+from subprocess import run, check_output
+from pprint import pprint
+
+INTERNAL_SCREEN = 'eDP-1'
+SCREENS = None
+VERBOSE = None
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-s', '--switch', type=str, choices=['on', 'off'], help='choose manually')
+parser.add_argument('-v', '--verbose', help='increase output verbosity', action='store_true')
+args = parser.parse_args()
+
+
+def verbose_pprint(output):
+    if not VERBOSE:
+        return
+
+    if type(output) in [str, int]:
+        print(output)
+    else:
+        pprint(output)
+
+
+def parse_xrandr_line(line):
+    if line.startswith(' '):
+        split_line = [s for s in line.split(' ') if s != '']
+        height, width = split_line[0].split('x')
+        resolution = float(split_line[1].strip('*+'))
+
+        return {
+            'resolution': {
+                'height': height,
+                'width': width
+            },
+            'frequency': resolution
+        }
+    else:
+        split_line = line.split(' ')
+        output = split_line[0]
+        status = split_line[1]
+
+        return {
+            'output': output,
+            'status': status
+        }
+
+
+def parse_xrandr():
+    xrandr_output = check_output(['xrandr']).decode('utf-8')
+    xrandr_output = xrandr_output.splitlines()
+
+    screens = {}
+    current_output = None
+
+    for line in xrandr_output:
+        # clean non interesting xrandr output
+        if line.startswith('Screen'):
+            continue
+
+        try:
+            parsed_line = parse_xrandr_line(line)
+        except:
+            continue
+
+        if 'output' in parsed_line.keys() and parsed_line['status'] == 'connected':
+            current_output = parsed_line['output']
+            screens.update({current_output: None})
+
+        elif 'resolution' in parsed_line and screens.get(current_output) == None \
+                and parsed_line['frequency'] >= 30:
+            # only use first resolution from xrandr to choose best option automatically
+            screens[current_output] = parsed_line['resolution']
+
+
+
+    return screens
+
+
+def external_screen_present():
+    return get_active_external_screens().length() > 0
+
+
+def clone_screen():
+    verbose_pprint('clone screen')
+    commands = ['xrandr', '--output', INTERNAL_SCREEN, '--auto']
+
+    int_resolution = SCREENS[INTERNAL_SCREEN]
+    int_height = int(int_resolution['height'])
+    int_width = int(int_resolution['width'])
+
+    for screen in get_active_external_screens():
+        resolution = SCREENS[screen]
+        height = int(resolution['height'])
+        width = int(resolution['width'])
+        mode = '{}x{}'.format(height, width)
+
+        height_scale = int_height / height
+        width_scale = int_width / width
+        scale = '{}x{}'.format(width_scale, height_scale)
+
+        verbose_pprint('screen: {}, scale: {}'.format(screen, scale))
+
+        commands.extend(['--output', screen, '--mode', mode, '--scale', scale])
+
+    verbose_pprint('run command: {}'.format(' '.join(commands)))
+    run(commands)
+
+
+def shutdown_external_screens():
+    external_active_screens = get_active_external_screens()
+
+    verbose_pprint('shutdown external screens')
+    verbose_pprint('found external screens: {}'.format(external_active_screens))
+
+    commands = ['xrandr', '--output', INTERNAL_SCREEN, '--auto']
+
+    for screen in external_active_screens:
+        commands.extend(['--output', screen, '--off'])
+
+    verbose_pprint('run command: {}'.format(' '.join(commands)))
+    run(commands)
+
+
+def get_active_screens():
+    return [screen for screen, resolution in SCREENS.items() if resolution]
+
+
+def get_active_external_screens():
+    screens = get_active_screens()
+    screens.remove(INTERNAL_SCREEN)
+    return screens
+
+
+if args.verbose:
+    VERBOSE = True
+verbose_pprint('internal screen: {}'.format(INTERNAL_SCREEN))
+
+SCREENS = parse_xrandr()
+verbose_pprint('found screen configurations:')
+verbose_pprint(SCREENS)
+
+if args.switch == None:
+    if external_screen_present:
+        verbose_pprint('external screen found')
+        clone_screen()
+    else:
+        verbose_pprint('shutdown external screens')
+        shutdown_external_screens()
+elif args.switch == 'on':
+    clone_screen()
+elif args.switch == 'off':
+    shutdown_external_screens()
